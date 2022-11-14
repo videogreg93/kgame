@@ -1,11 +1,9 @@
 package kweb.template
 
 import kweb.*
-import kweb.html.BodyElement
 import kweb.state.KVar
 import kweb.util.json
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
 
 fun main(args: Array<String>) {
     Kweb(port = 16097) {
@@ -18,15 +16,20 @@ fun main(args: Array<String>) {
             route {
                 path("/") { params ->
                     val searchText = KVar("")
-                    input(type = InputType.text).value = searchText
-                    button().apply {
-                        text("Search")
-                        on.click {
-                            url.value = "/search/${searchText.value}"
+                    form {
+                        input(type = InputType.text).value = searchText
+                        button().apply {
+                            text("Search")
+                            on.click {
+                                url.value = "/search/${searchText.value}"
+                            }
                         }
+                    }.on.submit { event ->
+                        url.value = "/search/${searchText.value}"
                     }
+
                     br()
-                    h1().text = searchText
+                    h2().text("Latest Releases")
                     posts.forEach { post ->
                         a(href = post.attr("href")) {
                             img(
@@ -40,8 +43,22 @@ fun main(args: Array<String>) {
                 path("/search/{query}") { params ->
                     val query = params.getValue("query")
                     val newUrl = "https://www.skidrowreloaded.com/?s=${query.value.replace(" ", "+")}"
-                    val searchResult = Jsoup.connect(newUrl).get()
-                    println(searchResult)
+                    val searchResults = Jsoup.connect(newUrl).get().select(".post").drop(1)
+                    searchResults.forEach { result ->
+                        val title = result.child(0).child(0).text()
+                        val date = result.selectFirst(".meta")!!.text()
+                        val link = result.child(0).child(0).attr("href")
+                        val imageSource = result.selectFirst(".lazy-hidden")!!.attr("data-lazy-src")
+                        a(href = link) {
+                            h1().text(title)
+                            p().text(date)
+                            img(
+                                mapOf(
+                                    "src" to imageSource.json
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }
