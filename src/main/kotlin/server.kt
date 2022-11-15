@@ -1,12 +1,14 @@
 package kweb.template
 
 import kweb.*
+import kweb.plugins.fomanticUI.fomantic
+import kweb.plugins.fomanticUI.fomanticUIPlugin
 import kweb.state.KVar
 import kweb.util.json
 import org.jsoup.Jsoup
 
 fun main(args: Array<String>) {
-    Kweb(port = 16097) {
+    Kweb(port = 16097, plugins = listOf(fomanticUIPlugin)) {
         val site = "https://www.skidrowreloaded.com/"
         val web = Jsoup.connect(site).get()
         val posts = web.select(".post-excerpt").map {
@@ -16,15 +18,19 @@ fun main(args: Array<String>) {
             route {
                 path("/") { params ->
                     val searchText = KVar("")
-                    form {
-                        input(type = InputType.text).value = searchText
-                        button().apply {
+                    val form = form {
+                        div(fomantic.ui.icon.input) {
+                            input(type = InputType.text, placeholder = "Search...").value = searchText
+                            i(fomantic.search.icon)
+                        }
+                        button(fomantic.ui.primary.button).apply {
                             text("Search")
                             on.click {
                                 url.value = "/search/${searchText.value}"
                             }
                         }
-                    }.on.submit { event ->
+                    }
+                    form.on(preventDefault = true).submit {
                         url.value = "/search/${searchText.value}"
                     }
 
